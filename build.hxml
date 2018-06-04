@@ -3,5 +3,6 @@
 -cp src
 -debug
 -lib om.api
+-cmd cp -u res/data/playlist.json bin/
 -cmd cp -u res/html/app.html bin/index.html
--cmd lessc res/style/app.less bin/app.css
+-cmd lessc res/style/app.less bin/app.css --no-color

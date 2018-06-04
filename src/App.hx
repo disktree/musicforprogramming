@@ -3,84 +3,142 @@ import js.Browser;
 import js.Browser.console;
 import js.Browser.document;
 import js.Browser.window;
+import js.html.Element;
 import js.html.InputElement;
+import om.Json;
 import om.api.youtube.YouTube;
+import om.api.youtube.YouTubePlayer;
+import om.FetchTools.*;
 
 class App {
 
-	//static var PLAYLIST = ['5QCj-YyjLKM','9ZS7eM_-jEA','MmIQ7ansrA0','lE-nHkeQSOg','drOYUXcgaeE'];
-	static var PLAYLIST = [
-		'-WejD5fPTBE',
-		'9ZS7eM_-jEA',
-		'MmIQ7ansrA0',
-		'1WbloLnhkOY',
-		't1UTeTcGd5I',
-		'NPVdAAzwtg0',
-		'9sYsXyU77E0',
-		'I1z3Uf4Zu0o',
-		'WEh9k0xNoMY',
-		'eu2169itPM0',
-		'VK5uG2fN6HE',
-		'mDVEOXR4rIc',
-		'A97qEuIopYw',
-		'QIXcng9Nu_M',
-		'9fThCJ5S9OU',
-		'pX_jySkFIK4',
-		'1D587yc-8V0',
-	];
+	static var player : YouTubePlayer;
+	static var playlist : Array<String>;
+	static var index : Int;
 
-	static var video : VideoPlayer;
+	static function play( ?start : Float ) {
+		player.loadVideoById( playlist[index], start );
+	}
 
-	//static function handleVideoPlayerEvent() {}
-
-	static function handleClick(e) {
-		trace(e);
-		video.playNext();
+	static function playNext() {
+		if( ++index == playlist.length ) index = 0;
+		play();
 	}
 
 	static function main() {
 
 		window.onload = function() {
 
-			/*
-			var storage = Browser.getLocalStorage();
-			var _playlistIndex = storage.getItem( 'playlist_index' );
-			var playlistIndex = (_playlistIndex == null) ? 0 : Std.parseInt( _playlistIndex );
-			if( playlistIndex >= PLAYLIST.length ) playlistIndex = PLAYLIST.length-1;
-			*/
+			fetchJson( 'playlist.json' ).then( function(data){
 
-			//var playlistIndex = Std.int( Math.random() * (PLAYLIST.length-1));
-			var playlistIndex = 0;
+				playlist = data;
+				index = 0;
 
-			trace( 'Playlist index: $playlistIndex' );
+				YouTube.init( function(){
 
-			YouTube.init( function(){
+					trace( "Youtube ready" );
 
-				trace( 'Youtube ready' );
+					var controls = document.getElementById( 'controls' );
+					var loader = document.getElementById( 'loader' );
 
-				var overlay = document.getElementById( 'overlay' );
+					player = new YouTubePlayer( 'youtube-player', {
+						playerVars: {
+							controls: no,
+							color: white,
+							autoplay: 0,
+							disablekb: 0,
+							fs: 0,
+							iv_load_policy: 3,
+							//enablejsapi: 1,
+							modestbranding: 1,
+							showinfo: 0
+						},
+						events: {
+							'onReady': function(e){
 
-				video = new VideoPlayer( document.getElementById( 'youtube-player' ) );
-				//video.onEvent = handleVideoPlayerEvent;
+								trace( "Youtube player ready" );
 
-				video.init( PLAYLIST, playlistIndex, function(){
+								var volume : InputElement = cast controls.querySelector( 'input[name=volume]' );
+								volume.oninput = e -> {
+									player.setVolume( Std.parseFloat( volume.value ) );
+								}
 
-						trace( 'Videoplayer ready' );
+								var storage = Browser.getLocalStorage();
+								var item = storage.getItem( 'musicforprogramming' );
+								var state = { index: 0, time: 0, volume: 70 };
+								if( item != null ) {
+									state = Json.parse( item );
+									index = state.index;
+									volume.value = Std.string( state.volume );
+									/*
+									trace(state);
+									index = state.index;
+									if( index >= playlist.length ) index = 0;
+									if( state.time != null ) {
+										//trace("SEEK " +state.time);
+										//player.seekTo( Std.parseFloat( state.time ) );
+									}
+									if( state.volume != null ) {
+										volume.value = Std.string( state.volume );
+									}
+									*/
+								} else {
+									state = { index: 0, time: 0, volume: 70 };
+								}
 
-						//video.element.addEventListener( 'click', handleClick, false );
-						overlay.addEventListener( 'click', handleClick, false );
+								play( state.time );
 
-						//video.playNext();
-						video.play();
+								var overlay = document.getElementById( 'overlay' );
+								overlay.addEventListener( 'click', function(e) {
+									playNext();
+								}, false );
 
+								window.onbeforeunload = function(e){
+									storage.setItem( 'musicforprogramming', Json.stringify( {
+										index: index,
+										time: player.getCurrentTime(),
+										volume: Std.parseFloat( volume.value )
+									} ) );
+									return null;
+								}
+
+							},
+							'onStateChange': function(e){
+								trace(e.data );
+								switch e.data {
+								case unstarted:
+									//trace(">>>>>>>>>>>>>>");
+								//	controls.style.display = 'none';
+								case buffering:
+								case ended:
+									//controls.style.display = 'none';
+									playNext();
+								case playing:
+									controls.style.display = 'block';
+									loader.style.display = 'none';
+									trace( player );
+									trace( player.getCurrentTime() );
+								default:
+									//loader.style.display = 'block';
+									controls.style.display = 'none';
+									loader.style.display = 'block';
+								}
+							},
+							'onPlaybackQualityChange': function(e){
+							},
+							'onPlaybackRateChange': function(e){
+							},
+							'onError': function(e){
+								trace(e);
+							}
+						}
+					});
 				});
 			});
 
-			var controls = document.getElementById( 'controls' );
-			var volume : InputElement = cast controls.querySelector( 'input[name=volume]' );
-			volume.oninput = e -> {
-				video.volume = Std.parseFloat( volume.value );
-			}
+			window.oncontextmenu = e -> {
+	            e.preventDefault();
+	        }
 		};
 	}
 
