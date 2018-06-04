@@ -5,4 +5,5 @@
 -lib om.api
 -cmd cp -u res/data/playlist.json bin/
 -cmd cp -u res/html/app.html bin/index.html
+-cmd cp -u res/icon/favicon.png bin/
 -cmd lessc res/style/app.less bin/app.css --no-color
