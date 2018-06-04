@@ -1,0 +1,7 @@
+-js bin/app.js
+-main App
+-cp src
+-debug
+-lib om.api
+-cmd cp -u res/html/app.html bin/index.html
+-cmd lessc res/style/app.less bin/app.css
