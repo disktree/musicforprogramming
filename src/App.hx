@@ -40,6 +40,7 @@ class App {
 
 					var controls = document.getElementById( 'controls' );
 					var loader = document.getElementById( 'loader' );
+					loader.classList.add( 'active' );
 
 					player = new YouTubePlayer( 'youtube-player', {
 						playerVars: {
@@ -71,18 +72,6 @@ class App {
 									index = state.index;
 									volume.value = Std.string( state.volume );
 									player.setVolume( state.volume );
-									/*
-									trace(state);
-									index = state.index;
-									if( index >= playlist.length ) index = 0;
-									if( state.time != null ) {
-										//trace("SEEK " +state.time);
-										//player.seekTo( Std.parseFloat( state.time ) );
-									}
-									if( state.volume != null ) {
-										volume.value = Std.string( state.volume );
-									}
-									*/
 								} else {
 									state = { index: 0, time: 0, volume: 70 };
 								}
@@ -108,21 +97,18 @@ class App {
 								trace(e.data );
 								switch e.data {
 								case unstarted:
-									//trace(">>>>>>>>>>>>>>");
 								//	controls.style.display = 'none';
 								case buffering:
 								case ended:
 									//controls.style.display = 'none';
 									playNext();
 								case playing:
-									controls.style.display = 'block';
-									loader.style.display = 'none';
-									trace( player );
-									trace( player.getCurrentTime() );
+									controls.classList.add( 'active' );
+									loader.classList.remove( 'active' );
+									//trace( player.getCurrentTime() );
 								default:
-									//loader.style.display = 'block';
-									controls.style.display = 'none';
-									loader.style.display = 'block';
+									controls.classList.remove( 'active' );
+									loader.classList.add( 'active' );
 								}
 							},
 							'onPlaybackQualityChange': function(e){
