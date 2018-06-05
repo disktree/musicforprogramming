@@ -70,6 +70,7 @@ class App {
 									state = Json.parse( item );
 									index = state.index;
 									volume.value = Std.string( state.volume );
+									player.setVolume( state.volume );
 									/*
 									trace(state);
 									index = state.index;
