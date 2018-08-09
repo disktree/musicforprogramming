@@ -50,7 +50,8 @@ class App {
 						iv_load_policy: 3,
 						//enablejsapi: 1,
 						modestbranding: 1,
-						showinfo: 0
+						showinfo: 0,
+						loop: 1
 					},
 					events: {
 						'onReady': function(e){
