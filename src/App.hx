@@ -59,7 +59,13 @@ class App {
 
 							var volume : InputElement = cast controls.querySelector( 'input[name=volume]' );
 							volume.oninput = e -> {
-								player.setVolume( Std.parseFloat( volume.value ) );
+								var vol = Std.parseFloat( volume.value );
+								player.setVolume( vol );
+								if( vol == 0 ) {
+									player.pauseVideo();
+								} else {
+									player.playVideo();
+								}
 							}
 
 							var storage = Browser.getLocalStorage();
@@ -95,7 +101,8 @@ class App {
 							trace(e.data );
 							switch e.data {
 							case unstarted:
-							//	controls.style.display = 'none';
+								controls.classList.remove( 'active' );
+								loader.classList.add( 'active' );
 							case buffering:
 							case ended:
 								//controls.style.display = 'none';
@@ -104,6 +111,7 @@ class App {
 								controls.classList.add( 'active' );
 								loader.classList.remove( 'active' );
 								//trace( player.getCurrentTime() );
+							case paused:
 							default:
 								controls.classList.remove( 'active' );
 								loader.classList.add( 'active' );
