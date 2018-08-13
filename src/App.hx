@@ -21,6 +21,8 @@ class App {
 
 	static function init( playlistURL = 'playlist.json' ) {
 
+		loader.classList.add( 'active' );
+
 		index = 0;
 
 		fetchJson( playlistURL ).then( function(data){
@@ -35,7 +37,7 @@ class App {
 					playerVars: {
 						controls: no,
 						color: white,
-						autoplay: 0,
+						autoplay: 1,
 						disablekb: 0,
 						fs: 0,
 						iv_load_policy: 3,
@@ -48,16 +50,21 @@ class App {
 						'onReady': handlePlayerReady,
 						'onStateChange': handlePlayerStateChange,
 						'onError': function(e){
-							trace(e);
-						}
+							console.error(e);
+						},
+						'onPlaybackQualityChange': function(e) trace(e),
+
 					}
 				});
+
 			});
 		});
 	}
 
 	static function play( ?start : Float ) {
-		player.loadVideoById( playlist[index], start );
+		var id = playlist[index];
+		console.log( 'Play: $id' );
+		player.loadVideoById( id, start );
 	}
 
 	static function playNext() {
@@ -68,6 +75,8 @@ class App {
 	static function handlePlayerReady(e) {
 
 		trace( "Youtube player ready" );
+
+		player.setPlaybackQuality( 'small' );
 
 		var volume : InputElement = cast controls.querySelector( 'input[name=volume]' );
 		volume.oninput = e -> {
@@ -85,6 +94,7 @@ class App {
 		var state = { index: 0, time: 0, volume: 70 };
 		if( item != null ) {
 			state = Json.parse( item );
+			console.log( state );
 			index = state.index;
 			volume.value = Std.string( state.volume );
 			player.setVolume( state.volume );
@@ -136,13 +146,20 @@ class App {
 
 			isMobileDevice = om.System.isMobile();
 
+			console.info( 'musicforprogramming [mobile:$isMobileDevice]' );
+
 			controls = document.getElementById( 'controls' );
 			loader = document.getElementById( 'loader' );
-			loader.classList.add( 'active' );
 
 			if( isMobileDevice ) {
-				//TODO mobile devices require initial user interaction
-				document.body.textContent = 'DESKTOP DEVICES ONLY';
+				var btn = document.createDivElement();
+				btn.classList.add( 'startbutton' );
+				btn.textContent = 'PLAY';
+				btn.onclick = function() {
+					btn.remove();
+					init();
+				}
+				document.body.appendChild( btn );
 			} else {
 				init();
 				window.oncontextmenu = e -> {

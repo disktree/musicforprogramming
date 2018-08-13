@@ -3,6 +3,7 @@
 -cp src
 -debug
 -lib om.api
+
 -cmd mkdir -p bin/icon && cp -u res/icon/icon-*.png bin/icon
 -cmd cp -u res/icon/favicon.png bin/
 -cmd cp -u res/data/playlist.json bin/
