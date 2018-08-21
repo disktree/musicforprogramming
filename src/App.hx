@@ -16,10 +16,12 @@ class App {
 	static var playlist : Array<String>;
 	static var index : Int;
 	static var player : YouTubePlayer;
+
 	static var controls : Element;
 	static var loader : Element;
+	static var volume : InputElement;
 
-	static function init( playlistURL = 'playlist.json' ) {
+	static function init( playlistURL = 'playlist.json', ?onReady : Void->Void ) {
 
 		loader.classList.add( 'active' );
 
@@ -47,7 +49,10 @@ class App {
 						loop: 1
 					},
 					events: {
-						'onReady': handlePlayerReady,
+						'onReady': function(e){
+							handlePlayerReady();
+							if( onReady != null ) onReady();
+						},
 						'onStateChange': handlePlayerStateChange,
 						'onError': function(e){
 							console.error(e);
@@ -56,7 +61,6 @@ class App {
 
 					}
 				});
-
 			});
 		});
 	}
@@ -72,13 +76,17 @@ class App {
 		play();
 	}
 
-	static function handlePlayerReady(e) {
+	static function playPrev() {
+		if( --index == -1 ) index = playlist.length-1;
+		play();
+	}
+
+	static function handlePlayerReady(?e) {
 
 		trace( "Youtube player ready" );
 
 		player.setPlaybackQuality( 'small' );
 
-		var volume : InputElement = cast controls.querySelector( 'input[name=volume]' );
 		volume.oninput = e -> {
 			var vol = Std.parseFloat( volume.value );
 			player.setVolume( vol );
@@ -88,6 +96,8 @@ class App {
 				player.playVideo();
 			}
 		}
+
+		//volume.onchange =
 
 		var storage = Browser.getLocalStorage();
 		var item = storage.getItem( 'musicforprogramming' );
@@ -140,6 +150,23 @@ class App {
 		}
 	}
 
+	static function handleKeyDown(e) {
+		switch e.keyCode {
+		case 39,'K'.code:
+			playNext();
+		case 37,'J'.code:
+			playPrev();
+		case 38,187,'I'.code: //up: arrow,+
+			var vol = Math.min( player.getVolume() + 10, 100 );
+			player.setVolume( vol );
+			volume.value = Std.string( vol );
+		case 40,189,'N'.code: //down: arrow,-
+			var vol = Math.max( player.getVolume() - 10, 0 );
+			player.setVolume( vol );
+			volume.value = Std.string( vol );
+		}
+	}
+
 	static function main() {
 
 		window.onload = function() {
@@ -149,6 +176,7 @@ class App {
 			console.info( 'musicforprogramming [mobile:$isMobileDevice]' );
 
 			controls = document.getElementById( 'controls' );
+			volume = cast controls.querySelector( 'input[name=volume]' );
 			loader = document.getElementById( 'loader' );
 
 			if( isMobileDevice ) {
@@ -161,7 +189,11 @@ class App {
 				}
 				document.body.appendChild( btn );
 			} else {
-				init();
+
+				init( function() {
+					window.onkeydown = handleKeyDown;
+				});
+
 				window.oncontextmenu = e -> {
 					e.preventDefault();
 				}
