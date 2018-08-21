@@ -81,6 +81,11 @@ class App {
 		play();
 	}
 
+	static function playRand() {
+		index = Std.int( Math.random() * (playlist.length-1) );
+		play();
+	}
+
 	static function handlePlayerReady(?e) {
 
 		trace( "Youtube player ready" );
@@ -164,6 +169,8 @@ class App {
 			var vol = Math.max( player.getVolume() - 10, 0 );
 			player.setVolume( vol );
 			volume.value = Std.string( vol );
+		case 'R'.code:
+			playRand();
 		}
 	}
 
