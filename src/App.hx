@@ -13,6 +13,7 @@ import om.api.youtube.YouTubePlayer;
 class App {
 
 	static var isMobileDevice : Bool;
+
 	static var playlist : Array<String>;
 	static var index : Int;
 	static var player : YouTubePlayer;
@@ -40,7 +41,7 @@ class App {
 						controls: no,
 						color: white,
 						autoplay: 1,
-						disablekb: 0,
+						disablekb: 1,
 						fs: 0,
 						iv_load_policy: 3,
 						//enablejsapi: 1,
@@ -90,7 +91,7 @@ class App {
 
 		trace( "Youtube player ready" );
 
-		player.setPlaybackQuality( 'small' );
+		player.setPlaybackQuality( small );
 
 		volume.oninput = e -> {
 			var vol = Std.parseFloat( volume.value );
@@ -135,20 +136,21 @@ class App {
 	}
 
 	static function handlePlayerStateChange(e) {
-		trace(e.data );
+		trace( e.data );
 		switch e.data {
 		case unstarted:
 			controls.classList.remove( 'active' );
 			loader.classList.add( 'active' );
 		case buffering:
+			controls.classList.remove( 'active' );
+			loader.classList.add( 'active' );
 		case ended:
-			//controls.style.display = 'none';
 			playNext();
 		case playing:
 			controls.classList.add( 'active' );
 			loader.classList.remove( 'active' );
-			//trace( player.getCurrentTime() );
 		case paused:
+			//controls.classList.remove( 'active' );
 		default:
 			controls.classList.remove( 'active' );
 			loader.classList.add( 'active' );
@@ -189,7 +191,7 @@ class App {
 			if( isMobileDevice ) {
 				var btn = document.createDivElement();
 				btn.classList.add( 'startbutton' );
-				btn.textContent = 'PLAY';
+				btn.textContent = '{PLAY}';
 				btn.onclick = function() {
 					btn.remove();
 					init();
