@@ -118,6 +118,11 @@ class App {
 			play( state.time );
 			overlay.onclick = e -> playNext();
 			window.onkeydown = handleKeyDown;
+			window.addEventListener( 'mousewheel', e -> {
+				var vol = player.getVolume() + ((e.wheelDelta < 0) ? -10 : 10 );
+				player.setVolume( vol );
+				volume.value = Std.string( vol );
+			}, false );
 		}
 	}
 
