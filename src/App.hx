@@ -1,4 +1,5 @@
 
+import haxe.Timer;
 import js.Browser;
 import js.Browser.console;
 import js.Browser.document;
@@ -14,9 +15,9 @@ class App {
 
 	static var isMobileDevice : Bool;
 
+	static var player : YouTubePlayer;
 	static var playlist : Array<String>;
 	static var index : Int;
-	static var player : YouTubePlayer;
 
 	static var controls : Element;
 	static var loader : Element;
@@ -56,7 +57,9 @@ class App {
 						},
 						'onStateChange': handlePlayerStateChange,
 						'onError': function(e){
-							console.error(e);
+							console.error( 'Failed to play [$index][${playlist[index]}]' );
+							//playlist.splice( index, 1 ); //TODO report to server
+							Timer.delay( playNext, 1000 );
 						},
 						'onPlaybackQualityChange': function(e) trace(e),
 
@@ -68,17 +71,17 @@ class App {
 
 	static function play( ?start : Float ) {
 		var id = playlist[index];
-		console.log( 'Play: $id' );
+		console.info( 'Play [$index][$id]' );
 		player.loadVideoById( id, start );
 	}
 
 	static function playNext() {
-		if( ++index == playlist.length ) index = 0;
+		if( ++index >= playlist.length ) index = 0;
 		play();
 	}
 
 	static function playPrev() {
-		if( --index == -1 ) index = playlist.length-1;
+		if( --index <= -1 ) index = playlist.length-1;
 		play();
 	}
 
@@ -102,8 +105,6 @@ class App {
 				player.playVideo();
 			}
 		}
-
-		//volume.onchange =
 
 		var storage = Browser.getLocalStorage();
 		var item = storage.getItem( 'musicforprogramming' );
