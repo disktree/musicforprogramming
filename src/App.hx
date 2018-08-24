@@ -4,157 +4,120 @@ import js.Browser;
 import js.Browser.console;
 import js.Browser.document;
 import js.Browser.window;
+import js.Promise;
 import js.html.Element;
 import js.html.InputElement;
+import om.AbstractEnumTools;
 import om.Json;
 import om.FetchTools.*;
 import om.api.youtube.YouTube;
 import om.api.youtube.YouTubePlayer;
+import om.api.youtube.YouTubePlayer.PlayerState;
+
+using om.ArrayTools;
+
+typedef State = {
+	index : Int,
+	time : Int,
+	volume : Int
+}
 
 class App {
 
-	static var isMobileDevice : Bool;
+	static var isMobileDevice = om.System.isMobile();
+
+	static var playlist : Array<String>;
+	static var state : State;
 
 	static var player : YouTubePlayer;
-	static var playlist : Array<String>;
-	static var index : Int;
-
 	static var controls : Element;
 	static var loader : Element;
 	static var volume : InputElement;
 
-	static function init( playlistURL = 'playlist.json', ?onReady : Void->Void ) {
-
+	static function play( ?startSeconds : Int ) {
+		var id = playlist[state.index];
+		console.info( 'Play: ${state.index} → $id' );
+		controls.classList.remove( 'active' );
 		loader.classList.add( 'active' );
+		player.cueVideoById( id, startSeconds, 'small' );
+	}
 
-		index = 0;
+	static function playNext() {
+		if( ++state.index >= playlist.length ) state.index = 0;
+		play();
+	}
 
-		fetchJson( playlistURL ).then( function(data){
+	static function playPrev() {
+		if( --state.index <= -1 ) state.index = playlist.length-1;
+		play();
+	}
 
-			playlist = data;
+	static function playRand() {
+		state.index = getRandomIndex();
+		play();
+	}
 
-			YouTube.init( function(){
+	static function getRandomIndex() : Int {
+		return Std.int( Math.random() * (playlist.length-1) );
+	}
 
-				trace( "Youtube ready" );
-
+	static function initPlayer() {
+		return new Promise( (resolve,reject) -> {
+			YouTube.init( () -> {
 				player = new YouTubePlayer( 'youtube-player', {
 					playerVars: {
 						controls: no,
-						color: white,
-						autoplay: 1,
 						disablekb: 1,
 						fs: 0,
 						iv_load_policy: 3,
-						//enablejsapi: 1,
-						modestbranding: 1,
+						loop: 1,
 						showinfo: 0,
-						loop: 1
 					},
 					events: {
-						'onReady': function(e){
-							handlePlayerReady();
-							if( onReady != null ) onReady();
+						'onReady': e -> {
+							resolve( null );
 						},
-						'onStateChange': handlePlayerStateChange,
-						'onError': function(e){
-							console.error( 'Failed to play [$index][${playlist[index]}]' );
+						'onStateChange': e -> {
+							console.log( AbstractEnumTools.getNames( PlayerState )[ AbstractEnumTools.getValues( PlayerState ).findIndex( v -> return v == e.data )]);
+							switch e.data {
+							case ended:
+								playNext();
+							case video_cued:
+								player.playVideo();
+							case playing:
+								controls.classList.add( 'active' );
+								loader.classList.remove( 'active' );
+							default:
+							}
+						},
+						'onError': e -> {
+							console.error( 'Failed to play [${state.index}][${playlist[state.index]}]' );
 							//playlist.splice( index, 1 ); //TODO report to server
 							Timer.delay( playNext, 1000 );
-						},
-						'onPlaybackQualityChange': function(e) trace(e),
-
+						}
 					}
 				});
 			});
 		});
 	}
 
-	static function play( ?start : Float ) {
-		var id = playlist[index];
-		console.info( 'Play [$index][$id]' );
-		player.loadVideoById( id, start );
-	}
-
-	static function playNext() {
-		if( ++index >= playlist.length ) index = 0;
-		play();
-	}
-
-	static function playPrev() {
-		if( --index <= -1 ) index = playlist.length-1;
-		play();
-	}
-
-	static function playRand() {
-		index = Std.int( Math.random() * (playlist.length-1) );
-		play();
-	}
-
-	static function handlePlayerReady(?e) {
-
-		trace( "Youtube player ready" );
-
-		player.setPlaybackQuality( small );
-
-		volume.oninput = e -> {
-			var vol = Std.parseFloat( volume.value );
-			player.setVolume( vol );
-			if( vol == 0 ) {
-				player.pauseVideo();
-			} else {
-				player.playVideo();
-			}
-		}
-
-		var storage = Browser.getLocalStorage();
-		var item = storage.getItem( 'musicforprogramming' );
-		var state = { index: 0, time: 0, volume: 70 };
-		if( item != null ) {
-			state = Json.parse( item );
-			console.log( state );
-			index = state.index;
-			volume.value = Std.string( state.volume );
-			player.setVolume( state.volume );
-		} else {
-			state = { index: 0, time: 0, volume: 70 };
-		}
-
-		play( state.time );
-
+	static function start() {
 		var overlay = document.getElementById( 'overlay' );
-		overlay.addEventListener( 'click', function(e) {
-			playNext();
-		}, false );
-
-		window.onbeforeunload = function(e){
-			storage.setItem( 'musicforprogramming', Json.stringify( {
-				index: index,
-				time: player.getCurrentTime(),
-				volume: Std.parseFloat( volume.value )
-			} ) );
-			return null;
-		}
-	}
-
-	static function handlePlayerStateChange(e) {
-		trace( e.data );
-		switch e.data {
-		case unstarted:
-			controls.classList.remove( 'active' );
-			loader.classList.add( 'active' );
-		case buffering:
-			controls.classList.remove( 'active' );
-			loader.classList.add( 'active' );
-		case ended:
-			playNext();
-		case playing:
-			controls.classList.add( 'active' );
+		if( isMobileDevice ) {
 			loader.classList.remove( 'active' );
-		case paused:
-			//controls.classList.remove( 'active' );
-		default:
-			controls.classList.remove( 'active' );
-			loader.classList.add( 'active' );
+			var btn = document.createDivElement();
+			btn.classList.add( 'startbutton' );
+			btn.textContent = '{PLAY}';
+			btn.onclick = function() {
+				btn.remove();
+				play( state.time );
+				overlay.onclick = e -> playNext();
+			}
+			document.body.appendChild( btn );
+		} else {
+			play( state.time );
+			overlay.onclick = e -> playNext();
+			window.onkeydown = handleKeyDown;
 		}
 	}
 
@@ -179,35 +142,55 @@ class App {
 
 	static function main() {
 
-		window.onload = function() {
+		window.oncontextmenu = e -> e.preventDefault();
 
-			isMobileDevice = om.System.isMobile();
-
-			console.info( 'musicforprogramming [mobile:$isMobileDevice]' );
+		window.onload = e -> {
 
 			controls = document.getElementById( 'controls' );
 			volume = cast controls.querySelector( 'input[name=volume]' );
 			loader = document.getElementById( 'loader' );
+			loader.classList.add( 'active' );
 
-			if( isMobileDevice ) {
-				var btn = document.createDivElement();
-				btn.classList.add( 'startbutton' );
-				btn.textContent = '{PLAY}';
-				btn.onclick = function() {
-					btn.remove();
-					init();
+			Promise.all( [
+				fetchJson( 'playlist.json' ),
+				initPlayer()
+			] ).then( result -> {
+
+				playlist = cast result[0];
+
+				var storage = Browser.getLocalStorage();
+				var item = Browser.getLocalStorage().getItem( 'musicforprogramming' );
+				state = (item == null) ? { index: getRandomIndex(), time: 0, volume: 50 } : Json.parse( item );
+
+				console.info( 'State: ' + state );
+
+				player.setVolume( state.volume );
+				player.setPlaybackQuality( small );
+
+				volume.value = Std.string( state.volume );
+
+				volume.oninput = e -> {
+					var vol = Std.parseFloat( volume.value );
+					player.setVolume( vol );
+					if( vol == 0 ) {
+						player.pauseVideo();
+					} else {
+						player.playVideo();
+					}
 				}
-				document.body.appendChild( btn );
-			} else {
 
-				init( function() {
-					window.onkeydown = handleKeyDown;
-				});
-
-				window.oncontextmenu = e -> {
-					e.preventDefault();
+				window.onbeforeunload = e -> {
+					state.time = Std.int( player.getCurrentTime() );
+					state.volume = Std.parseInt( volume.value );
+					storage.setItem( 'musicforprogramming', Json.stringify( state ) );
+					return null;
 				}
-			}
+
+				start();
+
+			}).catchError( e -> {
+				console.error( e );
+			});
 		}
 	}
 
