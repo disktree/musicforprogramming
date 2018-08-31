@@ -1,12 +1,13 @@
 {
     "short_name": "MFP",
     "name": "MusicForProgramming",
-    "description": "Music for concentration and increased productivity",
-    "start_url": "index.html",
+    "description": "Music intended for listening while coding to aid concentration and increase productivity",
+    "start_url": "./index.html",
     "display": "standalone",
-    "orientation": "portrait",
+	"background_color": "#000000",
+	"theme_color": "#000000",
     "developer": {
-        "name": "disktree.net",
+        "name": "disktree",
         "url": "https://disktree.net"
     },
     "icons": [
