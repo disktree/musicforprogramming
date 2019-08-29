@@ -2,6 +2,7 @@ import haxe.Timer;
 import js.Browser;
 import js.Browser.console;
 import js.Browser.document;
+import js.Browser.navigator;
 import js.Browser.window;
 import js.html.Element;
 import js.html.InputElement;
@@ -185,6 +186,21 @@ class App {
 				start();
 			}).catchError(e -> {
 				console.error(e);
+			});
+
+			window.oncontextmenu = e -> e.preventDefault();
+
+			/*
+				var deferredPrompt : Dynamic;
+				window.addEventListener('beforeinstallprompt', e -> {
+					trace(e);
+					deferredPrompt = e;
+					deferredPrompt.prompt();
+				});
+			 */
+
+			navigator.serviceWorker.register('sw.js').then(function(reg) {
+				trace(reg);
 			});
 		}
 	}

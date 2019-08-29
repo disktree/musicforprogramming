@@ -3,7 +3,8 @@
     "name": "MusicForProgramming",
     "description": "Music intended for listening while coding to aid concentration and increase productivity",
     "start_url": "./index.html",
-    "display": "standalone",
+	"display": "standalone",
+	"prefer_related_applications": false,
 	"background_color": "#000000",
 	"theme_color": "#000000",
     "developer": {
