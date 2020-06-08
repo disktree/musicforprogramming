@@ -5,7 +5,7 @@ Music intended for listening while programming.
 
 
 ## Keyboard Commands
- - Next Track: →, K
+ - Next: `→` `k`
  - Prev Track: ←, J
  - Random Track: R
  - Volume+10: ↑, +, I
