@@ -5,14 +5,15 @@ import js.Browser.document;
 import js.Browser.navigator;
 import js.Browser.window;
 import js.html.Element;
+import js.html.IFrameElement;
 import js.html.InputElement;
 import js.lib.Promise;
 import om.AbstractEnumTools;
-import om.Json;
-import om.FetchTools.*;
 import om.api.youtube.YouTube;
 import om.api.youtube.YouTubePlayer;
 import om.api.youtube.YouTubePlayer.PlayerState;
+import om.FetchTools.*;
+import om.Json;
 
 using om.ArrayTools;
 
@@ -23,24 +24,27 @@ typedef State = {
 }
 
 class App {
+
 	static var isMobileDevice = om.System.isMobile();
 
-	static var playlist:Array<String>;
-	static var state:State;
+	static var playlist : Array<String>;
+	static var state : State;
 
-	static var player:YouTubePlayer;
-	static var controls:Element;
-	static var loader:Element;
-	static var startElement:Element;
-
-	static var volume:InputElement;
+	static var iframe : IFrameElement;
+	static var player : YouTubePlayer;
+	static var overlay : Element;
+	static var controls : Element;
+	static var button : Element;
+	static var loader : Element;
+	static var startElement : Element;
+	static var volume : InputElement;
 
 	static function play(?startSeconds:Int) {
 		var id = playlist[state.index];
 		console.info('Play: ${state.index} → $id');
 		controls.classList.remove('active');
 		loader.classList.add('active');
-		player.cueVideoById(id, startSeconds, 'small');
+		player.cueVideoById(id, startSeconds, small );
 	}
 
 	static function playNext() {
@@ -68,28 +72,43 @@ class App {
 		return new Promise((resolve, reject) -> {
 			YouTube.init(() -> {
 				player = new YouTubePlayer('youtube-player', {
+					width: Std.string( window.innerWidth),
+					height: Std.string( window.innerHeight),
 					playerVars: {
 						controls: no,
 						disablekb: 1,
 						fs: 0,
 						iv_load_policy: 3,
+						cc_load_policy: 0,
 						loop: 1,
-						showinfo: 0,
+						//showinfo: 0,
+						modestbranding: 1,
 					},
 					events: {
 						'onReady': e -> {
 							resolve(null);
 						},
 						'onStateChange': e -> {
-							console.log(AbstractEnumTools.getNames(PlayerState)[AbstractEnumTools.getValues(PlayerState).findIndex(v -> return v == e.data)]);
+							//console.log(AbstractEnumTools.getNames(PlayerState)[AbstractEnumTools.getValues(PlayerState).findIndex(v -> return v == e.data)]);
+							//iframe.style.opacity = '1';
 							switch e.data {
 								case ended:
+									//button.textContent = '///';
 									playNext();
 								case video_cued:
+									button.textContent = '';
 									player.playVideo();
 								case playing:
+									button.textContent = '';
 									controls.classList.add('active');
 									loader.classList.remove('active');
+									window.top.postMessage('playing', '*');
+								//	overlay.classList.add('hidden');
+									//overlay.classList.add('hidden');
+									//trace("REMOVE HIDDEN");
+									//trace(iframe.classList.length);
+									//iframe.style.opacity = '1';
+									//iframe.classList.add('show');
 								default:
 							}
 						},
@@ -105,17 +124,8 @@ class App {
 	}
 
 	static function start() {
-		var overlay = document.getElementById('overlay');
 		loader.classList.remove('active');
-		var btn = document.createDivElement();
-		btn.classList.add('startbutton');
-		btn.textContent = 'START';
-		btn.onclick = function() {
-			btn.remove();
-			play(state.time);
-			overlay.onclick = e -> playNext();
-		}
-		document.body.appendChild(btn);
+		button.textContent = 'MUSICFORPROGRAMMING';
 		window.addEventListener('mousewheel', e -> {
 			var vol = player.getVolume() + ((e.wheelDelta < 0) ? -10 : 10);
 			player.setVolume(vol);
@@ -143,16 +153,41 @@ class App {
 		}
 	}
 
-	static function main() {
-		window.oncontextmenu = e -> e.preventDefault();
+	static function handleWindowResize(e) {
+		iframe.width = window.innerWidth;
+		iframe.height = window.innerHeight;
+		if( player != null ) {
+			player.setSize( window.innerWidth, window.innerHeight );
+		}
+	}
 
-		window.onload = e -> {
+	static function main() {
+
+		console.info('MUSICFORPROGRAMMING™');
+
+		window.addEventListener( 'load', e -> {
+			
+			iframe = cast document.getElementById('youtube-player');
+
+			overlay = document.getElementById('overlay');
 			controls = document.getElementById('controls');
+
+			button = document.getElementById('start');
+			button.textContent = '';
+			
 			volume = cast controls.querySelector('input[name=volume]');
+			
 			loader = document.getElementById('loader');
 			loader.classList.add('active');
 
-			Promise.all([fetchJson('playlist.json'), initPlayer()]).then(result -> {
+			button.onclick = function() {
+				//button.remove();
+				play(state.time);
+				overlay.onclick = e -> playNext();
+			}
+
+			Promise.all([fetchJson('playlist.json'), initPlayer()]).then( result -> {
+
 				playlist = cast result[0];
 
 				var storage = Browser.getLocalStorage();
@@ -176,6 +211,20 @@ class App {
 					}
 				}
 
+			/* 	function showPlayer() {
+					overlay.classList.add('hidden');
+				}
+				function hidePlayer() {
+					overlay.classList.remove('hidden');
+				}
+
+				//document.onmouseenter = e -> hidePlayer();
+				//document.onmouseleave = e -> showPlayer();
+
+				window.addEventListener( 'resize', handleWindowResize, false );
+
+				window.oncontextmenu = e -> e.preventDefault();
+
 				window.onbeforeunload = e -> {
 					state.time = Std.int(player.getCurrentTime());
 					state.volume = Std.parseInt(volume.value);
@@ -183,12 +232,20 @@ class App {
 					return null;
 				}
 
+				window.onmessage = function(e){
+					switch e.data {
+					case 'start','next':
+						playNext();
+					}
+				}; */
+
+				//window.onfocus = e -> trace(e);
+
 				start();
-			}).catchError(e -> {
+
+			}).catchError( e -> {
 				console.error(e);
 			});
-
-			window.oncontextmenu = e -> e.preventDefault();
 
 			/*
 				var deferredPrompt : Dynamic;
@@ -199,9 +256,11 @@ class App {
 				});
 			 */
 
+			/*
 			navigator.serviceWorker.register('sw.js').then(function(reg) {
 				trace(reg);
 			});
-		}
+			*/
+		});
 	}
 }

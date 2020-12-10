@@ -4,7 +4,5 @@
 -lib om.api
 -dce full
 -debug
--cmd lessc res/style/app.less bin/app.css --no-color 
-#-cmd cp -u res/html/app.html bin/index.html
-#-cmd cp -u res/icon/favicon.png bin/
-#-cmd mkdir -p bin/icon && cp -u res/icon/icon-*.png bin/icon
+-D source-header=
+-cmd lessc res/style/app.less bin/app.css --source-map
