@@ -136,19 +136,19 @@ class App {
 
 	static function handleKeyDown(e) {
 		switch e.keyCode {
-			case 39, 'K'.code:
+			case 39, 'L'.code:
 				playNext();
-			case 37, 'J'.code:
+			case 37, 'H'.code:
 				playPrev();
-			case 38, 187, 'I'.code: // up: arrow,+
+			case 38, 187, 'I'.code, 'J'.code: // up: arrow,+
 				var vol = Math.min(player.getVolume() + 10, 100);
 				player.setVolume(vol);
 				volume.value = Std.string(vol);
-			case 40, 189, 'N'.code: // down: arrow,-
+			case 40, 189, 'N'.code, 'K'.code: // down: arrow,-
 				var vol = Math.max(player.getVolume() - 10, 0);
 				player.setVolume(vol);
 				volume.value = Std.string(vol);
-			case 'R'.code:
+			case 32, 'P'.code, 'R'.code:
 				playRand();
 		}
 	}
